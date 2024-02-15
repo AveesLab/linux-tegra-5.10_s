@@ -24,8 +24,10 @@
 #define TC_PRIO_INTERACTIVE_BULK	4
 #define TC_PRIO_INTERACTIVE		6
 #define TC_PRIO_CONTROL			7
+#define TC_PRIO_SECRET			16
 
-#define TC_PRIO_MAX			15
+//#define TC_PRIO_MAX			15
+#define TC_PRIO_MAX			31
 
 /* Generic queue statistics, available for all the elements.
    Particular schedulers may have also their private records.

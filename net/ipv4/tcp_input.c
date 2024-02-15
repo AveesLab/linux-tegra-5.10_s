@@ -3087,7 +3087,6 @@ void tcp_rearm_rto(struct sock *sk)
 {
 	const struct inet_connection_sock *icsk = inet_csk(sk);
 	struct tcp_sock *tp = tcp_sk(sk);
-
 	/* If the retrans timer is currently being used by Fast Open
 	 * for SYN-ACK retrans purpose, stay put.
 	 */
@@ -3704,7 +3703,6 @@ static int tcp_ack(struct sock *sk, const struct sk_buff *skb, int flag)
 
 	/* We very likely will need to access rtx queue. */
 	prefetch(sk->tcp_rtx_queue.rb_node);
-
 	/* If the ack is older than previous acks
 	 * then we can probably ignore it.
 	 */
@@ -3825,8 +3823,9 @@ static int tcp_ack(struct sock *sk, const struct sk_buff *skb, int flag)
 	}
 
 	/* If needed, reset TLP/RTO timer when RACK doesn't set. */
-	if (flag & FLAG_SET_XMIT_TIMER)
+	if (flag & FLAG_SET_XMIT_TIMER){
 		tcp_set_xmit_timer(sk);
+	}
 
 	if ((flag & FLAG_FORWARD_PROGRESS) || !(flag & FLAG_NOT_DUP))
 		sk_dst_confirm(sk);

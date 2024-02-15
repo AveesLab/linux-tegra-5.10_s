@@ -3303,7 +3303,7 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
 	struct netdev_queue *txq;
 	struct sk_buff *skb;
 	int ret;
-
+	printk("pktgen_xmit. \n");
 	/* If device is offline, then don't send */
 	if (unlikely(!netif_running(odev) || !netif_carrier_ok(odev))) {
 		pktgen_stop_device(pkt_dev);

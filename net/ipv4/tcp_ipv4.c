@@ -439,6 +439,7 @@ void tcp_ld_RTO_revert(struct sock *sk, u32 seq)
 		/* RTO revert clocked out retransmission.
 		 * Will retransmit now.
 		 */
+		printk("tcp_ld_RTO_revert to tcp_retransmit_timer\n");
 		tcp_retransmit_timer(sk);
 	}
 }

@@ -318,7 +318,6 @@ static int __ip_finish_output(struct net *net, struct sock *sk, struct sk_buff *
 static int ip_finish_output(struct net *net, struct sock *sk, struct sk_buff *skb)
 {
 	int ret;
-
 	ret = BPF_CGROUP_RUN_PROG_INET_EGRESS(sk, skb);
 	switch (ret) {
 	case NET_XMIT_SUCCESS:
@@ -337,7 +336,6 @@ static int ip_mc_finish_output(struct net *net, struct sock *sk,
 	struct rtable *new_rt;
 	bool do_cn = false;
 	int ret, err;
-
 	ret = BPF_CGROUP_RUN_PROG_INET_EGRESS(sk, skb);
 	switch (ret) {
 	case NET_XMIT_CN:

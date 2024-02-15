@@ -3768,11 +3768,13 @@ static inline int __dev_xmit_skb(struct sk_buff *skb, struct Qdisc *q,
 	struct sk_buff *to_free = NULL;
 	bool contended;
 	int rc;
-
 	qdisc_calculate_pkt_len(skb, q);
 
 	if (q->flags & TCQ_F_NOLOCK) {
 		rc = q->enqueue(skb, q, &to_free) & NET_XMIT_MASK;
+		// if(rc != 0){
+		// 	printk(KERN_INFO "xmit rc = %d\n", rc);
+		// }
 		if (likely(!netif_xmit_frozen_or_stopped(txq)))
 			qdisc_run(q);
 
@@ -3794,6 +3796,7 @@ static inline int __dev_xmit_skb(struct sk_buff *skb, struct Qdisc *q,
 	spin_lock(root_lock);
 	if (unlikely(test_bit(__QDISC_STATE_DEACTIVATED, &q->state))) {
 		__qdisc_drop(skb, &to_free);
+		// printk("drop0 \n");
 		rc = NET_XMIT_DROP;
 	} else if ((q->flags & TCQ_F_CAN_BYPASS) && !qdisc_qlen(q) &&
 		   qdisc_run_begin(q)) {

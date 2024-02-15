@@ -173,9 +173,31 @@ static struct dst_ops ipv4_dst_ops = {
 	.confirm_neigh =	ipv4_confirm_neigh,
 };
 
+// #define ECN_OR_COST(class)	TC_PRIO_##class
+
+// const __u8 ip_tos2prio[16] = {
+// 	TC_PRIO_BESTEFFORT,
+// 	ECN_OR_COST(BESTEFFORT),
+// 	TC_PRIO_BESTEFFORT,
+// 	ECN_OR_COST(BESTEFFORT),
+// 	TC_PRIO_BULK,
+// 	ECN_OR_COST(BULK),
+// 	TC_PRIO_BULK,
+// 	ECN_OR_COST(BULK),
+// 	TC_PRIO_INTERACTIVE,
+// 	ECN_OR_COST(INTERACTIVE),
+// 	TC_PRIO_INTERACTIVE,
+// 	ECN_OR_COST(INTERACTIVE),
+// 	TC_PRIO_INTERACTIVE_BULK,
+// 	ECN_OR_COST(INTERACTIVE_BULK),
+// 	TC_PRIO_INTERACTIVE_BULK,
+// 	ECN_OR_COST(INTERACTIVE_BULK)
+// };
+// EXPORT_SYMBOL(ip_tos2prio);
+
 #define ECN_OR_COST(class)	TC_PRIO_##class
 
-const __u8 ip_tos2prio[16] = {
+const __u8 ip_tos2prio[18] = {
 	TC_PRIO_BESTEFFORT,
 	ECN_OR_COST(BESTEFFORT),
 	TC_PRIO_BESTEFFORT,
@@ -191,7 +213,9 @@ const __u8 ip_tos2prio[16] = {
 	TC_PRIO_INTERACTIVE_BULK,
 	ECN_OR_COST(INTERACTIVE_BULK),
 	TC_PRIO_INTERACTIVE_BULK,
-	ECN_OR_COST(INTERACTIVE_BULK)
+	ECN_OR_COST(INTERACTIVE_BULK),
+	TC_PRIO_SECRET,
+	ECN_OR_COST(SECRET)
 };
 EXPORT_SYMBOL(ip_tos2prio);
 

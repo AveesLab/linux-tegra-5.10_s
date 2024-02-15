@@ -23,7 +23,7 @@
 #define TEEC_ERROR_BAD_PARAMETERS	0xFFFF0006
 #define TEEC_ERROR_OUT_OF_MEMORY	0xFFFF000C
 #define TEEC_ERROR_COMMUNICATION	0xFFFF000E
-
+#define TEEC_EMERGENCY               0xFFFFFFF1
 #define TEEC_ORIGIN_COMMS		0x00000002
 
 /* Maximum number of sessions which can be opened with a Trusted Application */

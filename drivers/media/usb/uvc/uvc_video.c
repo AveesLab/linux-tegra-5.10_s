@@ -1362,6 +1362,9 @@ static void uvc_video_next_buffers(struct uvc_streaming *stream,
 	*video_buf = uvc_queue_next_buffer(&stream->queue, *video_buf);
 }
 
+
+
+
 static void uvc_video_decode_isoc(struct uvc_urb *uvc_urb,
 			struct uvc_buffer *buf, struct uvc_buffer *meta_buf)
 {

@@ -21,7 +21,7 @@
 #define TEEC_ERROR_COMMUNICATION	0xFFFF000E
 #define TEEC_ERROR_OUT_OF_MEMORY	0xFFFF000C
 #define TEEC_ERROR_SHORT_BUFFER		0xFFFF0010
-
+#define TEEC_EMERGENCY              0xFFFFFFF1
 #define TEEC_ORIGIN_COMMS		0x00000002
 
 typedef void (optee_invoke_fn)(unsigned long, unsigned long, unsigned long,

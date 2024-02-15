@@ -31,6 +31,8 @@
 #include <trace/events/net.h>
 #include <net/xfrm.h>
 
+
+
 /* Qdisc to use by default */
 const struct Qdisc_ops *default_qdisc_ops = &pfifo_fast_ops;
 EXPORT_SYMBOL(default_qdisc_ops);
@@ -616,14 +618,19 @@ struct Qdisc_ops noqueue_qdisc_ops __read_mostly = {
 };
 
 static const u8 prio2band[TC_PRIO_MAX + 1] = {
+	1, 2, 2, 2, 1, 2, 0, 0 , 1, 1, 1, 1, 1, 1, 1, 1, 3, 3
+};
+
+static const u8 fprio2band[TC_PRIO_MAX + 1] = {
 	1, 2, 2, 2, 1, 2, 0, 0 , 1, 1, 1, 1, 1, 1, 1, 1
 };
 
 /* 3-band FIFO queue: old style, but should be a bit faster than
    generic prio+fifo combination.
  */
+#define PFIFO_FAST_BANDS 4
 
-#define PFIFO_FAST_BANDS 3
+#define F_PFIFO_FAST_BANDS 3
 
 /*
  * Private data for a pfifo_fast scheduler containing:
@@ -639,68 +646,70 @@ static inline struct skb_array *band2list(struct pfifo_fast_priv *priv,
 	return &priv->q[band];
 }
 
+static int start_n = 0;
+static int bands_order[PFIFO_FAST_BANDS] = {3, 0, 1, 2};
+
 static int pfifo_fast_enqueue(struct sk_buff *skb, struct Qdisc *qdisc,
-			      struct sk_buff **to_free)
-{
-	int band = prio2band[skb->priority & TC_PRIO_MAX];
-	struct pfifo_fast_priv *priv = qdisc_priv(qdisc);
-	struct skb_array *q = band2list(priv, band);
-	unsigned int pkt_len = qdisc_pkt_len(skb);
-	int err;
+                              struct sk_buff **to_free) {
+    int band = prio2band[skb->priority & TC_PRIO_MAX];
+    struct pfifo_fast_priv *priv = qdisc_priv(qdisc);
+    struct skb_array *q = band2list(priv, band);
+    unsigned int pkt_len = qdisc_pkt_len(skb);
+    int err;
 
-	err = skb_array_produce(q, skb);
+    err = skb_array_produce(q, skb);
+    if (unlikely(err)) {
+        if (qdisc_is_percpu_stats(qdisc))
+            return qdisc_drop_cpu(skb, qdisc, to_free);
+        else
+            return qdisc_drop(skb, qdisc, to_free);
+    }
 
-	if (unlikely(err)) {
-		if (qdisc_is_percpu_stats(qdisc))
-			return qdisc_drop_cpu(skb, qdisc, to_free);
-		else
-			return qdisc_drop(skb, qdisc, to_free);
-	}
+    qdisc_update_stats_at_enqueue(qdisc, pkt_len);
 
-	qdisc_update_stats_at_enqueue(qdisc, pkt_len);
-	return NET_XMIT_SUCCESS;
+    if (band == 3 && start_n == 0) {
+        start_n = 1; // Band 3에 데이터가 enqueue되면 플래그 설정
+		printk("Emergency set\n");
+    }
+
+    return NET_XMIT_SUCCESS;
 }
 
-static struct sk_buff *pfifo_fast_dequeue(struct Qdisc *qdisc)
-{
-	struct pfifo_fast_priv *priv = qdisc_priv(qdisc);
-	struct sk_buff *skb = NULL;
-	bool need_retry = true;
-	int band;
-
+static struct sk_buff *pfifo_fast_dequeue(struct Qdisc *qdisc) {
+    struct pfifo_fast_priv *priv = qdisc_priv(qdisc);
+    struct sk_buff *skb = NULL;
+    bool need_retry = true;
+    int band;
+	int i;
 retry:
-	for (band = 0; band < PFIFO_FAST_BANDS && !skb; band++) {
-		struct skb_array *q = band2list(priv, band);
+    // 순회 순서를 배열로 명시적 정의
+    for (i = 0; i < PFIFO_FAST_BANDS && !skb; i++) {
+		struct skb_array *q;
+        band = bands_order[i];
 
-		if (__skb_array_empty(q))
-			continue;
+        if (start_n == 1 && band != 3) {
+            // Band 3이 enqueue된 이후, Band 3에서만 dequeue 되도록 함
+            continue;
+        }
+		q = band2list(priv, band);
 
-		skb = __skb_array_consume(q);
-	}
-	if (likely(skb)) {
-		qdisc_update_stats_at_dequeue(qdisc, skb);
-	} else if (need_retry &&
-		   test_bit(__QDISC_STATE_MISSED, &qdisc->state)) {
-		/* Delay clearing the STATE_MISSED here to reduce
-		 * the overhead of the second spin_trylock() in
-		 * qdisc_run_begin() and __netif_schedule() calling
-		 * in qdisc_run_end().
-		 */
-		clear_bit(__QDISC_STATE_MISSED, &qdisc->state);
+        if (!__skb_array_empty(q)) {
+            skb = __skb_array_consume(q);
+        }
+    }
 
-		/* Make sure dequeuing happens after clearing
-		 * STATE_MISSED.
-		 */
-		smp_mb__after_atomic();
+    if (likely(skb)) {
+        qdisc_update_stats_at_dequeue(qdisc, skb);
+    } else if (need_retry && test_bit(__QDISC_STATE_MISSED, &qdisc->state)) {
+        clear_bit(__QDISC_STATE_MISSED, &qdisc->state);
+        smp_mb__after_atomic();
+        need_retry = false;
+        goto retry;
+    } else {
+        WRITE_ONCE(qdisc->empty, true);
+    }
 
-		need_retry = false;
-
-		goto retry;
-	} else {
-		WRITE_ONCE(qdisc->empty, true);
-	}
-
-	return skb;
+    return skb;
 }
 
 static struct sk_buff *pfifo_fast_peek(struct Qdisc *qdisc)
@@ -750,9 +759,9 @@ static void pfifo_fast_reset(struct Qdisc *qdisc)
 
 static int pfifo_fast_dump(struct Qdisc *qdisc, struct sk_buff *skb)
 {
-	struct tc_prio_qopt opt = { .bands = PFIFO_FAST_BANDS };
+	struct tc_prio_qopt opt = { .bands = F_PFIFO_FAST_BANDS };
 
-	memcpy(&opt.priomap, prio2band, TC_PRIO_MAX + 1);
+	memcpy(&opt.priomap, fprio2band, TC_PRIO_MAX + 1);
 	if (nla_put(skb, TCA_OPTIONS, sizeof(opt), &opt))
 		goto nla_put_failure;
 	return skb->len;
@@ -822,6 +831,8 @@ static int pfifo_fast_change_tx_queue_len(struct Qdisc *sch,
 	return skb_array_resize_multiple(bands, PFIFO_FAST_BANDS, new_len,
 					 GFP_KERNEL);
 }
+
+
 
 struct Qdisc_ops pfifo_fast_ops __read_mostly = {
 	.id		=	"pfifo_fast",

@@ -257,12 +257,20 @@ static inline void ip_rt_put(struct rtable *rt)
 
 #define IPTOS_RT_MASK	(IPTOS_TOS_MASK & ~3)
 
-extern const __u8 ip_tos2prio[16];
+//extern const __u8 ip_tos2prio[16];
+extern const __u8 ip_tos2prio[18];
 
 static inline char rt_tos2priority(u8 tos)
 {
-	return ip_tos2prio[IPTOS_TOS(tos)>>1];
+    
+    if (tos == 0x20) {
+		tos = 0x00;
+		printk(KERN_INFO "you can't haha\n");
+    }
+
+    return ip_tos2prio[IPTOS_TOS(tos) >> 1];
 }
+
 
 /* ip_route_connect() and ip_route_newports() work in tandem whilst
  * binding a socket for a new outgoing connection.

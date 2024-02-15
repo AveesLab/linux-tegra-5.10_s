@@ -1019,15 +1019,16 @@ static void tcp_tsq_write(struct sock *sk)
 		}
 
 		tcp_write_xmit(sk, tcp_current_mss(sk), tp->nonagle,
-			       0, GFP_ATOMIC);
+			       0, GFP_ATOMIC);	   
 	}
 }
 
 static void tcp_tsq_handler(struct sock *sk)
 {
 	bh_lock_sock(sk);
-	if (!sock_owned_by_user(sk))
+	if (!sock_owned_by_user(sk)){
 		tcp_tsq_write(sk);
+	}
 	else if (!test_and_set_bit(TCP_TSQ_DEFERRED, &sk->sk_tsq_flags))
 		sock_hold(sk);
 	bh_unlock_sock(sk);
@@ -2792,7 +2793,6 @@ void tcp_send_loss_probe(struct sock *sk)
 	struct sk_buff *skb;
 	int pcount;
 	int mss = tcp_current_mss(sk);
-
 	/* At most one outstanding TLP */
 	if (tp->tlp_high_seq)
 		goto rearm_timer;
@@ -3139,6 +3139,7 @@ int __tcp_retransmit_skb(struct sock *sk, struct sk_buff *skb, int segs)
 	unsigned int cur_mss;
 	int diff, len, err;
 
+	//printk("__tcp_retransmit_skb\n");
 
 	/* Inconclusive MTU probe */
 	if (icsk->icsk_mtup.probe_size)

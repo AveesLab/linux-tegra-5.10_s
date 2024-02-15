@@ -534,7 +534,7 @@ void tcp_retransmit_timer(struct sock *sk)
 	}
 
 	tcp_enter_loss(sk);
-
+	//printk("tcp_retransmit_timer\n");
 	icsk->icsk_retransmits++;
 	if (tcp_retransmit_skb(sk, tcp_rtx_queue_head(sk), 1) > 0) {
 		/* Retransmission failed because of local congestion,

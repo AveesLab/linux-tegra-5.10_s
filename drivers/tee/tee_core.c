@@ -15,6 +15,11 @@
 #include <linux/uaccess.h>
 #include <crypto/hash.h>
 #include <crypto/sha.h>
+#include <linux/socket.h>
+#include <net/sock.h>
+#include <linux/net.h>
+#include <linux/fdtable.h>
+#include <linux/file.h>
 #include "tee_private.h"
 
 #define TEE_NUM_DEVICES	32
@@ -542,6 +547,21 @@ out:
 	return rc;
 }
 
+
+static struct sock *get_sock_from_current_process(int fd)
+{
+    struct file *file;
+    struct socket *socket;
+    struct sock *sk = NULL;
+
+	file = fget(fd);
+    socket = file->private_data;
+    sk = socket->sk;
+
+
+    return sk;
+}
+
 static int tee_ioctl_invoke(struct tee_context *ctx,
 			    struct tee_ioctl_buf_data __user *ubuf)
 {
@@ -552,6 +572,8 @@ static int tee_ioctl_invoke(struct tee_context *ctx,
 	struct tee_ioctl_invoke_arg arg;
 	struct tee_ioctl_param __user *uparams = NULL;
 	struct tee_param *params = NULL;
+	struct sock *sk;
+	int fd;
 
 	if (!ctx->teedev->desc->ops->invoke_func)
 		return -EINVAL;
@@ -567,8 +589,10 @@ static int tee_ioctl_invoke(struct tee_context *ctx,
 	if (copy_from_user(&arg, uarg, sizeof(arg)))
 		return -EFAULT;
 
+
 	if (sizeof(arg) + TEE_IOCTL_PARAM_SIZE(arg.num_params) != buf.buf_len)
 		return -EINVAL;
+
 
 	if (arg.num_params) {
 		params = kcalloc(arg.num_params, sizeof(struct tee_param),
@@ -579,8 +603,11 @@ static int tee_ioctl_invoke(struct tee_context *ctx,
 		rc = params_from_user(ctx, params, arg.num_params, uparams);
 		if (rc)
 			goto out;
+		if (arg.num_params > 0) {
+            fd = (u64)params[0].u.value.a;
+            sk = get_sock_from_current_process(fd);
+        }
 	}
-
 	rc = ctx->teedev->desc->ops->invoke_func(ctx, &arg, params);
 	if (rc)
 		goto out;
@@ -590,7 +617,14 @@ static int tee_ioctl_invoke(struct tee_context *ctx,
 		rc = -EFAULT;
 		goto out;
 	}
+
 	rc = params_to_user(uparams, arg.num_params, params);
+	if (arg.num_params > 0) {
+        if ((u64)params[0].u.value.a == 1){
+            sk->sk_priority = 16;
+			printk("Emergency\n");
+        }
+    }
 out:
 	if (params) {
 		/* Decrease ref count for all valid shared memory pointers */
