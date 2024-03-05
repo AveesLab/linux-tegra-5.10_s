@@ -10,9 +10,14 @@ sudo apt install cmake
 
 ## Step 1: Build kernel image ~~~
 ```bash
+cd
 git clone https://github.com/AveesLab/kernel_5.10S.git
-sudo apt install ???
-sudo apt install ???
+cd
+git clone https://github.com/jetsonhacks/jetson-linux-build.git
+cd jetson-linux-build
+./makeKernel.sh
+./makeModules.sh
+./copyImage.sh
 ```
 
 ---
