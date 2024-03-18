@@ -1,6 +1,8 @@
 # Band-S
 Band-S introduces a hidden transmit queue for Ethernet-based automotive networks to protect safety-critical data flows from cram attacks by unauthorized applications. By leveraging a trusted execution environment, Band-S ensures that only authorized applications can utilize this secure pathway, preventing the disruption of critical communications within vehicles. The implementation of Band-S maintains the integrity and security of essential vehicular functions, offering a resilient response to emerging cybersecurity threats in automotive Ethernet networks.
 
+
+
 # kernel_5.10S
 kernel_5.10 For Band-S made by @strongti
 
